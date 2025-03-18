@@ -99,13 +99,14 @@ function pulsar::jwt::generate_symmetric_key() {
 function pulsar::jwt::generate_asymmetric_key() {
     local secret_name="${release}-token-asymmetric-key"
 
-    local tmpdir=$(mktemp -d)
+    local tmpdir=$(cygpath -w $(mktemp -d))
     trap "test -d $tmpdir && rm -rf $tmpdir" RETURN
 
-    privatekeytmpfile=${tmpdir}/PRIVATEKEY
-    publickeytmpfile=${tmpdir}/PUBLICKEY
+    privatekeytmpfile="${tmpdir}/PRIVATEKEY"
+    publickeytmpfile="${tmpdir}/PUBLICKEY"
 
     # Generate key pair
+    export MSYS_NO_PATHCONV=1
     docker run --user 0 --rm -t -v ${tmpdir}:/keydir ${PULSAR_TOKENS_CONTAINER_IMAGE} bin/pulsar tokens create-key-pair --output-private-key=/keydir/PRIVATEKEY --output-public-key=/keydir/PUBLICKEY
 
     kubectl create secret generic ${secret_name} -n ${namespace} --from-file=$privatekeytmpfile --from-file=$publickeytmpfile ${local:+ -o yaml --dry-run=client}
