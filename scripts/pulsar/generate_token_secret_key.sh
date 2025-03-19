@@ -84,9 +84,10 @@ local_cmd=${file:+-o yaml --dry-run=client >secret.yaml}
 function pulsar::jwt::generate_symmetric_key() {
     local secret_name="${release}-token-symmetric-key"
 
-    local tmpdir=$(mktemp -d)
+    local tmpdir=$(cygpath -w $(mktemp -d))
     trap "test -d $tmpdir && rm -rf $tmpdir" RETURN
-    local tmpfile=${tmpdir}/SECRETKEY
+
+    local tmpfile="${tmpdir}/SECRETKEY"
     docker run --rm -t ${PULSAR_TOKENS_CONTAINER_IMAGE} bin/pulsar tokens create-secret-key > "${tmpfile}"
     kubectl create secret generic ${secret_name} -n ${namespace} --from-file=$tmpfile ${local:+ -o yaml --dry-run=client}
     # if local is true, keep the file available for debugging purposes

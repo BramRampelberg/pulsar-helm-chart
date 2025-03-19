@@ -109,13 +109,15 @@ function pulsar::jwt::generate_symmetric_token() {
     local secret_name="${release}-token-symmetric-key"
 
 
-    local tmpdir=$(mktemp -d)
+    local tmpdir=$(cygpath -w $(mktemp -d))
     trap "test -d $tmpdir && rm -rf $tmpdir" RETURN
+
     secretkeytmpfile=${tmpdir}/secret.key
     tokentmpfile=${tmpdir}/token.jwt
 
     pulsar::jwt::get_secret SECRETKEY ${secretkeytmpfile} ${secret_name}
 
+    export MSYS_NO_PATHCONV=1
     docker run --user 0 --rm -t -v ${tmpdir}:/keydir ${PULSAR_TOKENS_CONTAINER_IMAGE} bin/pulsar tokens create -a HS256 --subject "${role}" --secret-key=file:/keydir/secret.key > ${tokentmpfile}
     
     newtokentmpfile=${tmpdir}/token.jwt.new
@@ -128,7 +130,7 @@ function pulsar::jwt::generate_asymmetric_token() {
     local token_name="${release}-token-${role}"
     local secret_name="${release}-token-asymmetric-key"
 
-    local tmpdir=$(mktemp -d)
+    local tmpdir=$(cygpath -w $(mktemp -d))
     trap "test -d $tmpdir && rm -rf $tmpdir" RETURN
 
     privatekeytmpfile=${tmpdir}/privatekey.der
@@ -137,6 +139,7 @@ function pulsar::jwt::generate_asymmetric_token() {
     pulsar::jwt::get_secret PRIVATEKEY ${privatekeytmpfile} ${secret_name}
 
     # Generate token
+    export MSYS_NO_PATHCONV=1
     docker run --user 0 --rm -t -v ${tmpdir}:/keydir ${PULSAR_TOKENS_CONTAINER_IMAGE} bin/pulsar tokens create -a RS256 --subject "${role}" --private-key=file:/keydir/privatekey.der > ${tokentmpfile}
 
     newtokentmpfile=${tmpdir}/token.jwt.new
